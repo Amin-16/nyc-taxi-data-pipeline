@@ -1,0 +1,17 @@
+# Python & PySpark
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Environment & Credentials
+.env
+*.pem
+*.key
+client_secret*
+
+# IDE / System files
+.DS_Store
+.vscode/
+.idea/
