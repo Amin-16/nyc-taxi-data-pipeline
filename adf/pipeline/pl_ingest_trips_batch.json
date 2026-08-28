@@ -1,0 +1,294 @@
+{
+	"name": "pl_ingest_trips_batch",
+	"properties": {
+		"activities": [
+			{
+				"name": "Alert_Placeholder",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "If_Not_Ingested",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"url": "https://httpbin.org/status/200",
+					"body": {
+						"status": "Failed"
+					}
+				}
+			},
+			{
+				"name": "Get_Metadata_Check",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 3,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_bronze_trips",
+						"type": "DatasetReference",
+						"parameters": {
+							"year": "@substring(pipeline().parameters.p_year_month, 0, 4)",
+							"month": "@substring(pipeline().parameters.p_year_month, 5, 2)",
+							"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+						}
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "If_Not_Ingested",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Get_Metadata_Check",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(activity('Get_Metadata_Check').output.exists)",
+						"type": "Expression"
+					},
+					"ifFalseActivities": [
+						{
+							"name": "Log_already_exists",
+							"type": "DatabricksNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+								"baseParameters": {
+									"pipeline_run_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"year_month": {
+										"value": "@pipeline().parameters.p_year_month",
+										"type": "Expression"
+									},
+									"status": "SKIPPED_ALREADY_EXISTS"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks_nyctaxi",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"ifTrueActivities": [
+						{
+							"name": "Copy_HTTP_to_Bronze",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "00:30:00",
+								"retry": 3,
+								"retryIntervalInSeconds": 60,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_tlc_http_source",
+									"type": "DatasetReference",
+									"parameters": {
+										"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_bronze_trips",
+									"type": "DatasetReference",
+									"parameters": {
+										"year": "@substring(pipeline().parameters.p_year_month, 0, 4)",
+										"month": "@substring(pipeline().parameters.p_year_month, 5, 2)",
+										"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+									}
+								}
+							]
+						},
+						{
+							"name": "Log_Audit_Summary",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Copy_HTTP_to_Bronze",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+								"baseParameters": {
+									"pipeline_run_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"year_month": {
+										"value": "@pipeline().parameters.p_year_month",
+										"type": "Expression"
+									},
+									"status": "SUCCESS"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks_nyctaxi",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Log_Audit_Summary_Failed",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Copy_HTTP_to_Bronze",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 2,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+								"baseParameters": {
+									"pipeline_run_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									},
+									"year_month": {
+										"value": "@pipeline().parameters.p_year_month",
+										"type": "Expression"
+									},
+									"status": "FAILED"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks_nyctaxi",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Alert_Placeholder_copy1",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Log_Audit_Summary_Failed",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": "https://httpbin.org/status/200",
+								"body": {
+									"status": "Failed"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"p_year_month": {
+				"type": "string"
+			}
+		},
+		"variables": {
+			"v_year_months": {
+				"type": "Array"
+			},
+			"v_debug": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2026-08-28T17:44:43Z"
+	},
+	"type": "Microsoft.DataFactory/factories/pipelines"
+}

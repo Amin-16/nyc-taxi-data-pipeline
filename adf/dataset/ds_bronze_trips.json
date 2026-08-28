@@ -1,0 +1,37 @@
+{
+	"name": "ds_bronze_trips",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_nyctaxi",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"year": {
+				"type": "string"
+			},
+			"month": {
+				"type": "string"
+			},
+			"fileName": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().fileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@concat('trips_raw/year=', dataset().year, '/month=', dataset().month)",
+					"type": "Expression"
+				},
+				"fileSystem": "bronze"
+			}
+		}
+	},
+	"type": "Microsoft.DataFactory/factories/datasets"
+}

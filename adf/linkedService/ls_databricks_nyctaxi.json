@@ -1,0 +1,14 @@
+{
+	"name": "ls_databricks_nyctaxi",
+	"type": "Microsoft.DataFactory/factories/linkedservices",
+	"properties": {
+		"annotations": [],
+		"type": "AzureDatabricks",
+		"typeProperties": {
+			"domain": "https://adb-7405606927050374.14.azuredatabricks.net",
+			"authentication": "MSI",
+			"workspaceResourceId": "/subscriptions/092f0ce1-e5d4-4ed0-ad1c-5e4c143aa136/resourceGroups/rg-nyc-taxi-dev/providers/Microsoft.Databricks/workspaces/dbw-nyc-taxi-dev",
+			"existingClusterId": "0826-215059-jpu434zl"
+		}
+	}
+}

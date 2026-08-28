@@ -1,0 +1,15 @@
+{
+	"name": "adf-nyc-taxi-dm",
+	"properties": {
+		"trustModeClaimForMi": {
+			"value": "Disabled",
+			"editable": true
+		}
+	},
+	"location": "swedencentral",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "5f8d2052-c39c-4b4c-a5e8-663c2bc0d609",
+		"tenantId": "78b89c5d-7bf7-4219-8e68-f3930212b914"
+	}
+}
