@@ -596,6 +596,7 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
+						"fileName": "weather.json",
 						"folderPath": {
 							"value": "weather_raw/batch_@{dataset().startDate}_to_@{dataset().endDate}",
 							"type": "Expression"
