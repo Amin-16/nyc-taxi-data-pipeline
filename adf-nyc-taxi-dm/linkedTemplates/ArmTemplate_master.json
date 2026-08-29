@@ -1,0 +1,77 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-nyc-taxi-dm"
+		},
+		"ls_adls_nyctaxi_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stdatalakenyctaxi.dfs.core.windows.net/"
+		},
+		"ls_databricks_nyctaxi_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0826-215059-jpu434zl"
+		},
+		"ls_http_openmeteo_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://archive-api.open-meteo.com/"
+		},
+		"ls_http_tlc_source_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+		},
+		"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
+			"type": "string",
+			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
+		},
+		"containerUri": {
+			"type": "string",
+			"metadata": "URI to storage account containing linked ARM templates"
+		},
+		"containerSasToken": {
+			"type": "string",
+			"metadata": "Sas token to storage account containing linked ARM templates"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "adf-nyc-taxi-dm_ArmTemplate_0",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_0.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
+					},
+					"ls_adls_nyctaxi_properties_typeProperties_url": {
+						"value": "[parameters('ls_adls_nyctaxi_properties_typeProperties_url')]"
+					},
+					"ls_databricks_nyctaxi_properties_typeProperties_existingClusterId": {
+						"value": "[parameters('ls_databricks_nyctaxi_properties_typeProperties_existingClusterId')]"
+					},
+					"ls_http_openmeteo_properties_typeProperties_url": {
+						"value": "[parameters('ls_http_openmeteo_properties_typeProperties_url')]"
+					},
+					"ls_http_tlc_source_properties_typeProperties_url": {
+						"value": "[parameters('ls_http_tlc_source_properties_typeProperties_url')]"
+					},
+					"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
+						"value": "[parameters('tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month')]"
+					}
+				}
+			},
+			"dependsOn": []
+		}
+	]
+}

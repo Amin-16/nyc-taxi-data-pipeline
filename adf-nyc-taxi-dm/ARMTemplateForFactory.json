@@ -1,0 +1,574 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-nyc-taxi-dm"
+		},
+		"ls_adls_nyctaxi_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stdatalakenyctaxi.dfs.core.windows.net/"
+		},
+		"ls_databricks_nyctaxi_properties_typeProperties_existingClusterId": {
+			"type": "string",
+			"defaultValue": "0826-215059-jpu434zl"
+		},
+		"ls_http_openmeteo_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://archive-api.open-meteo.com/"
+		},
+		"ls_http_tlc_source_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://d37ci6vzurychx.cloudfront.net/trip-data/"
+		},
+		"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
+			"type": "string",
+			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/pl_ingest_trips_batch')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "Alert_Placeholder",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "If_Not_Ingested",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {},
+							"url": "https://httpbin.org/status/200",
+							"body": {
+								"status": "Failed"
+							}
+						}
+					},
+					{
+						"name": "Get_Metadata_Check",
+						"type": "GetMetadata",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 3,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_bronze_trips",
+								"type": "DatasetReference",
+								"parameters": {
+									"year": "@substring(pipeline().parameters.p_year_month, 0, 4)",
+									"month": "@substring(pipeline().parameters.p_year_month, 5, 2)",
+									"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+								}
+							},
+							"fieldList": [
+								"exists"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "BinaryReadSettings"
+							}
+						}
+					},
+					{
+						"name": "If_Not_Ingested",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Get_Metadata_Check",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@not(activity('Get_Metadata_Check').output.exists)",
+								"type": "Expression"
+							},
+							"ifFalseActivities": [
+								{
+									"name": "Log_already_exists",
+									"type": "DatabricksNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+										"baseParameters": {
+											"pipeline_run_id": {
+												"value": "@pipeline().RunId",
+												"type": "Expression"
+											},
+											"year_month": {
+												"value": "@pipeline().parameters.p_year_month",
+												"type": "Expression"
+											},
+											"status": "SKIPPED_ALREADY_EXISTS"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_databricks_nyctaxi",
+										"type": "LinkedServiceReference"
+									}
+								}
+							],
+							"ifTrueActivities": [
+								{
+									"name": "Copy_HTTP_to_Bronze",
+									"type": "Copy",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "00:30:00",
+										"retry": 3,
+										"retryIntervalInSeconds": 60,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"source": {
+											"type": "BinarySource",
+											"storeSettings": {
+												"type": "HttpReadSettings",
+												"requestMethod": "GET"
+											},
+											"formatSettings": {
+												"type": "BinaryReadSettings"
+											}
+										},
+										"sink": {
+											"type": "BinarySink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											}
+										},
+										"enableStaging": false
+									},
+									"inputs": [
+										{
+											"referenceName": "ds_tlc_http_source",
+											"type": "DatasetReference",
+											"parameters": {
+												"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "ds_bronze_trips",
+											"type": "DatasetReference",
+											"parameters": {
+												"year": "@substring(pipeline().parameters.p_year_month, 0, 4)",
+												"month": "@substring(pipeline().parameters.p_year_month, 5, 2)",
+												"fileName": "@concat('yellow_tripdata_', pipeline().parameters.p_year_month, '.parquet')"
+											}
+										}
+									]
+								},
+								{
+									"name": "Log_Audit_Summary",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Copy_HTTP_to_Bronze",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+										"baseParameters": {
+											"pipeline_run_id": {
+												"value": "@pipeline().RunId",
+												"type": "Expression"
+											},
+											"year_month": {
+												"value": "@pipeline().parameters.p_year_month",
+												"type": "Expression"
+											},
+											"status": "SUCCESS"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_databricks_nyctaxi",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Log_Audit_Summary_Failed",
+									"type": "DatabricksNotebook",
+									"dependsOn": [
+										{
+											"activity": "Copy_HTTP_to_Bronze",
+											"dependencyConditions": [
+												"Failed"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 2,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_adf_batch_summary",
+										"baseParameters": {
+											"pipeline_run_id": {
+												"value": "@pipeline().RunId",
+												"type": "Expression"
+											},
+											"year_month": {
+												"value": "@pipeline().parameters.p_year_month",
+												"type": "Expression"
+											},
+											"status": "FAILED"
+										}
+									},
+									"linkedServiceName": {
+										"referenceName": "ls_databricks_nyctaxi",
+										"type": "LinkedServiceReference"
+									}
+								},
+								{
+									"name": "Alert_Placeholder_copy1",
+									"type": "WebActivity",
+									"dependsOn": [
+										{
+											"activity": "Log_Audit_Summary_Failed",
+											"dependencyConditions": [
+												"Succeeded"
+											]
+										}
+									],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"method": "POST",
+										"headers": {},
+										"url": "https://httpbin.org/status/200",
+										"body": {
+											"status": "Failed"
+										}
+									}
+								}
+							]
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_year_month": {
+						"type": "string"
+					}
+				},
+				"variables": {
+					"v_year_months": {
+						"type": "Array"
+					},
+					"v_debug": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"lastPublishTime": "2026-08-28T17:44:43Z"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/ds_bronze_trips')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_nyctaxi')]",
+				"[concat(variables('factoryId'), '/datasets/ds_tlc_http_source')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_trips')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_nyctaxi",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"year": {
+						"type": "string"
+					},
+					"month": {
+						"type": "string"
+					},
+					"fileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@concat('trips_raw/year=', dataset().year, '/month=', dataset().month)",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_nyctaxi')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_bronze_weather')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_adls_nyctaxi",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"startDate": {
+						"type": "string"
+					},
+					"endDate": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": {
+							"value": "weather_raw/batch_@{dataset().startDate}_to_@{dataset().endDate}",
+							"type": "Expression"
+						},
+						"fileSystem": "bronze"
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_adls_nyctaxi')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_openmeteo_http_source')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_http_openmeteo",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"startDate": {
+						"type": "string"
+					},
+					"endDate": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Json",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation",
+						"relativeUrl": {
+							"value": "v1/archive?latitude=40.7128&longitude=-74.0060&start_date=@{dataset().startDate}&end_date=@{dataset().endDate}&hourly=temperature_2m,precipitation,snowfall,wind_speed_10m,weathercode&timezone=America%2FNew_York",
+							"type": "Expression"
+						}
+					}
+				},
+				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_http_openmeteo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ds_tlc_http_source')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "ls_http_tlc_source",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"fileName": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "HttpServerLocation",
+						"relativeUrl": {
+							"value": "@dataset().fileName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_http_tlc_source')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_adls_nyctaxi')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('ls_adls_nyctaxi_properties_typeProperties_url')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_databricks_nyctaxi')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureDatabricks",
+				"typeProperties": {
+					"domain": "https://adb-7405606927050374.14.azuredatabricks.net",
+					"authentication": "MSI",
+					"workspaceResourceId": "/subscriptions/092f0ce1-e5d4-4ed0-ad1c-5e4c143aa136/resourceGroups/rg-nyc-taxi-dev/providers/Microsoft.Databricks/workspaces/dbw-nyc-taxi-dev",
+					"existingClusterId": "[parameters('ls_databricks_nyctaxi_properties_typeProperties_existingClusterId')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_http_openmeteo')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('ls_http_openmeteo_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_http_tlc_source')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "HttpServer",
+				"typeProperties": {
+					"url": "[parameters('ls_http_tlc_source_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_monthly_trips_ingest')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Started",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "pl_ingest_trips_batch",
+						"type": "PipelineReference"
+					},
+					"parameters": {
+						"p_year_month": "[parameters('tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month')]"
+					}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Month",
+					"interval": 1,
+					"startTime": "2025-01-01T00:00:00Z",
+					"endTime": "2026-01-02T23:46:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 1,
+					"retryPolicy": {
+						"intervalInSeconds": 30
+					},
+					"dependsOn": []
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_ingest_trips_batch')]"
+			]
+		}
+	]
+}
