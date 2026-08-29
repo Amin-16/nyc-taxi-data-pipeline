@@ -36,7 +36,7 @@
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
-						"value": "@not(json(activity('Get_Weather_Watermark').output.runOutput).is_complete)",
+						"value": "@equals(activity('Get_Weather_Watermark').output.runOutput.is_complete, true)",
 						"type": "Expression"
 					},
 					"ifTrueActivities": [
@@ -79,9 +79,9 @@
 									"referenceName": "ds_openmeteo_http_source",
 									"type": "DatasetReference",
 									"parameters": {
-										"startDate": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
+										"startDate": "@activity('Get_Weather_Watermark').output.runOutput.start_date",
 										"endDate": {
-											"value": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
+											"value": "@activity('Get_Weather_Watermark').output.runOutput.end_date",
 											"type": "Expression"
 										}
 									}
@@ -92,8 +92,14 @@
 									"referenceName": "ds_bronze_weather",
 									"type": "DatasetReference",
 									"parameters": {
-										"startDate": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
-										"endDate": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date"
+										"startDate": {
+											"value": "@activity('Get_Weather_Watermark').output.runOutput.start_date",
+											"type": "Expression"
+										},
+										"endDate": {
+											"value": "@activity('Get_Weather_Watermark').output.runOutput.end_date",
+											"type": "Expression"
+										}
 									}
 								}
 							]
@@ -127,8 +133,14 @@
 										"value": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
 										"type": "Expression"
 									},
-									"end_date": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
-									"pipeline_run_id": "@pipeline().RunId"
+									"end_date": {
+										"value": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
+										"type": "Expression"
+									},
+									"pipeline_run_id": {
+										"value": "@pipeline().RunId",
+										"type": "Expression"
+									}
 								}
 							},
 							"linkedServiceName": {
