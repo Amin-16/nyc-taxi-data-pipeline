@@ -1,0 +1,29 @@
+{
+	"name": "ds_openmeteo_http_source",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_http_openmeteo",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"startDate": {
+				"type": "string"
+			},
+			"endDate": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "HttpServerLocation",
+				"relativeUrl": {
+					"value": "v1/archive?latitude=40.7128&longitude=-74.0060&start_date=@{dataset().startDate}&end_date=@{dataset().endDate}&hourly=temperature_2m,precipitation,snowfall,wind_speed_10m,weathercode&timezone=America%2FNew_York",
+					"type": "Expression"
+				}
+			}
+		},
+		"schema": {}
+	}
+}

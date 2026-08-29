@@ -1,0 +1,27 @@
+{
+	"name": "ds_bronze_weather",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_nyctaxi",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"startDate": {
+				"type": "string"
+			},
+			"endDate": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "weather_raw/batch_@{dataset().startDate}_to_@{dataset().endDate}",
+				"fileSystem": "bronze"
+			}
+		},
+		"schema": {}
+	}
+}
