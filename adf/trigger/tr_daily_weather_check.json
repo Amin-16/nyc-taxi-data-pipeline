@@ -1,0 +1,24 @@
+{
+	"name": "tr_daily_weather_check",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "pl_ingest_weather_incremental",
+					"type": "PipelineReference"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2026-08-29T20:04:00",
+				"timeZone": "Egypt Standard Time"
+			}
+		}
+	}
+}
