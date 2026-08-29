@@ -1,0 +1,173 @@
+{
+	"name": "pl_ingest_weather_incremental",
+	"properties": {
+		"activities": [
+			{
+				"name": "Get_Weather_Watermark",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/get_weather_watermark"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_nyctaxi",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "If_Not_Complete",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Get_Weather_Watermark",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(json(activity('Get_Weather_Watermark').output.runOutput).is_complete)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Copy_Weather_HTTP_to_Bronze",
+							"type": "Copy",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 3,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "HttpReadSettings",
+										"requestMethod": "GET"
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"sink": {
+									"type": "JsonSink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									},
+									"formatSettings": {
+										"type": "JsonWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "ds_openmeteo_http_source",
+									"type": "DatasetReference",
+									"parameters": {
+										"startDate": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
+										"endDate": {
+											"value": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "ds_bronze_weather",
+									"type": "DatasetReference",
+									"parameters": {
+										"startDate": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
+										"endDate": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date"
+									}
+								}
+							]
+						},
+						{
+							"name": "Update_Weather_Watermark_And_Log",
+							"type": "DatabricksNotebook",
+							"dependsOn": [
+								{
+									"activity": "Copy_Weather_HTTP_to_Bronze",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebookPath": {
+									"value": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/update_weather_watermark_and_log",
+									"type": "Expression"
+								},
+								"baseParameters": {
+									"start_date": {
+										"value": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
+										"type": "Expression"
+									},
+									"end_date": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
+									"pipeline_run_id": "@pipeline().RunId"
+								}
+							},
+							"linkedServiceName": {
+								"referenceName": "ls_databricks_nyctaxi",
+								"type": "LinkedServiceReference"
+							}
+						},
+						{
+							"name": "Alert_Weather_Failed",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Copy_Weather_HTTP_to_Bronze",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": "https://httpbin.org/status/200",
+								"body": {
+									"status": "FAILED",
+									"pipeline": "pl_ingest_weather_incremental"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"annotations": []
+	}
+}
