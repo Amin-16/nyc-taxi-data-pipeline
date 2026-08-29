@@ -670,11 +670,11 @@
 										},
 										"baseParameters": {
 											"start_date": {
-												"value": "@json(activity('Get_Weather_Watermark').output.runOutput).start_date",
+												"value": "@activity('Get_Weather_Watermark').output.runOutput.start_date",
 												"type": "Expression"
 											},
 											"end_date": {
-												"value": "@json(activity('Get_Weather_Watermark').output.runOutput).end_date",
+												"value": "@activity('Get_Weather_Watermark').output.runOutput.end_date",
 												"type": "Expression"
 											},
 											"pipeline_run_id": {
