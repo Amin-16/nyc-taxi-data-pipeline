@@ -377,7 +377,7 @@
 						"userProperties": [],
 						"typeProperties": {
 							"expression": {
-								"value": "@equals(activity('Get_Weather_Watermark').output.runOutput.is_complete, true)",
+								"value": "@not(activity('Get_Weather_Watermark').output.runOutput.is_complete)",
 								"type": "Expression"
 							},
 							"ifTrueActivities": [
