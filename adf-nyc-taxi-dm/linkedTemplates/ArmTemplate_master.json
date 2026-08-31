@@ -19,6 +19,10 @@
 			"type": "string",
 			"defaultValue": "https://archive-api.open-meteo.com/"
 		},
+		"ls_http_tlc_misc_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://d37ci6vzurychx.cloudfront.net/misc/"
+		},
 		"ls_http_tlc_source_properties_typeProperties_url": {
 			"type": "string",
 			"defaultValue": "https://d37ci6vzurychx.cloudfront.net/trip-data/"
@@ -62,6 +66,9 @@
 					},
 					"ls_http_openmeteo_properties_typeProperties_url": {
 						"value": "[parameters('ls_http_openmeteo_properties_typeProperties_url')]"
+					},
+					"ls_http_tlc_misc_properties_typeProperties_url": {
+						"value": "[parameters('ls_http_tlc_misc_properties_typeProperties_url')]"
 					},
 					"ls_http_tlc_source_properties_typeProperties_url": {
 						"value": "[parameters('ls_http_tlc_source_properties_typeProperties_url')]"
