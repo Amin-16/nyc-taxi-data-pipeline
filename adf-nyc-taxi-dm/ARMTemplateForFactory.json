@@ -704,6 +704,7 @@
 				"typeProperties": {
 					"location": {
 						"type": "AzureBlobFSLocation",
+						"fileName": "zone_lookup.csv",
 						"folderPath": "zone_lookup_raw",
 						"fileSystem": "bronze"
 					},
