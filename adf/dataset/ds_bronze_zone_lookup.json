@@ -1,0 +1,23 @@
+{
+	"name": "ds_bronze_zone_lookup",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_adls_nyctaxi",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "zone_lookup_raw",
+				"fileSystem": "bronze"
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"quoteChar": "\""
+		},
+		"schema": []
+	}
+}
