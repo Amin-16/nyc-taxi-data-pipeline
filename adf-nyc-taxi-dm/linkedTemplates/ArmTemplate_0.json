@@ -1111,6 +1111,36 @@
 								"dependencyConditions": [
 									"Failed"
 								]
+							},
+							{
+								"activity": "Ingest_Weather",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Ingest_Trips",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "If Condition1",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "pipeline_start",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Check_Zone_Lookup",
+								"dependencyConditions": [
+									"Failed"
+								]
 							}
 						],
 						"policy": {
@@ -1131,7 +1161,7 @@
 								"type": "Expression"
 							},
 							"body": {
-								"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"trigger_time\": \"@{pipeline().TriggerTime}\",\n  \"error_details\": \"@{if(equals(activity('Gold_Build')?.status, 'Failed'), activity('Gold_Build')?.error?.message, if(equals(activity('Silver_Trips')?.status, 'Failed'), activity('Silver_Trips')?.error?.message, if(equals(activity('Silver_Weather')?.status, 'Failed'), activity('Silver_Weather')?.error?.message, 'Pipeline execution failed during processing.')))}\"\n}",
+								"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"trigger_time\": \"@{pipeline().TriggerTime}\",\n  \"error_details\": \"@{coalesce(activity('Gold_Build')?.error?.message, activity('Silver_Trips')?.error?.message, activity('Silver_Weather')?.error?.message, activity('Ingest_Trips')?.error?.message, activity('Ingest_Weather')?.error?.message, activity('Check_Zone_Lookup')?.error?.message, activity('pipeline_start')?.error?.message, 'Pipeline execution failed during processing.')}\"\n}",
 								"type": "Expression"
 							}
 						}
