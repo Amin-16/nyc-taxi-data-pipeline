@@ -308,7 +308,10 @@
 						"referenceName": "pl_silver_processing",
 						"type": "PipelineReference"
 					},
-					"waitOnCompletion": true
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_window_start": "@pipeline().parameters.p_window_start"
+					}
 				}
 			},
 			{
