@@ -848,7 +848,12 @@
 								"type": "PipelineReference"
 							},
 							"waitOnCompletion": true,
-							"parameters": {}
+							"parameters": {
+								"p_window_start": {
+									"value": "@pipeline().parameters.p_window_start",
+									"type": "Expression"
+								}
+							}
 						}
 					},
 					{
