@@ -27,6 +27,18 @@
 			"type": "string",
 			"defaultValue": "https://d37ci6vzurychx.cloudfront.net/trip-data/"
 		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type": {
+			"type": "string",
+			"defaultValue": "\"tumbling_window\""
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode": {
+			"type": "bool",
+			"defaultValue": false
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_window_start": {
+			"type": "string",
+			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
+		},
 		"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
 			"type": "string",
 			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
@@ -75,6 +87,15 @@
 					},
 					"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
 						"value": "[parameters('tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month')]"
+					},
+					"tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type": {
+						"value": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type')]"
+					},
+					"tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode": {
+						"value": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode')]"
+					},
+					"tr_master_monthly_run_properties_pipeline_parameters_p_window_start": {
+						"value": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_window_start')]"
 					}
 				}
 			},

@@ -30,6 +30,18 @@
 		"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
 			"type": "string",
 			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type": {
+			"type": "string",
+			"defaultValue": "\"tumbling_window\""
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode": {
+			"type": "bool",
+			"defaultValue": false
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_window_start": {
+			"type": "string",
+			"defaultValue": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
 		}
 	},
 	"variables": {
@@ -944,7 +956,12 @@
 								"type": "PipelineReference"
 							},
 							"waitOnCompletion": true,
-							"parameters": {}
+							"parameters": {
+								"p_year_month": {
+									"value": "@pipeline().parameters.p_window_start",
+									"type": "Expression"
+								}
+							}
 						}
 					},
 					{
@@ -1195,6 +1212,9 @@
 					"p_debug_mode": {
 						"type": "bool",
 						"defaultValue": false
+					},
+					"p_window_start": {
+						"type": "string"
 					}
 				},
 				"annotations": []
@@ -1269,6 +1289,43 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/pipelines/pl_ingest_trips_batch')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/tr_master_monthly_run')]",
+			"type": "Microsoft.DataFactory/factories/triggers",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipeline": {
+					"pipelineReference": {
+						"referenceName": "pl_master_orchestrator",
+						"type": "PipelineReference"
+					},
+					"parameters": {
+						"p_trigger_type": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type')]",
+						"p_debug_mode": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode')]",
+						"p_window_start": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_window_start')]"
+					}
+				},
+				"type": "TumblingWindowTrigger",
+				"typeProperties": {
+					"frequency": "Month",
+					"interval": 1,
+					"startTime": "2025-01-01T00:00:00Z",
+					"endTime": "2026-01-02T00:00:00Z",
+					"delay": "00:00:00",
+					"maxConcurrency": 1,
+					"retryPolicy": {
+						"count": 3,
+						"intervalInSeconds": 30
+					},
+					"dependsOn": []
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/pipelines/pl_master_orchestrator')]"
 			]
 		}
 	]

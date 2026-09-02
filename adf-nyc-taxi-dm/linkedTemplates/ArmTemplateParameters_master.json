@@ -20,6 +20,15 @@
 		"ls_http_tlc_source_properties_typeProperties_url": {
 			"value": "https://d37ci6vzurychx.cloudfront.net/trip-data/"
 		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_trigger_type": {
+			"value": "\"tumbling_window\""
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_debug_mode": {
+			"value": false
+		},
+		"tr_master_monthly_run_properties_pipeline_parameters_p_window_start": {
+			"value": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
+		},
 		"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
 			"value": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
 		},
