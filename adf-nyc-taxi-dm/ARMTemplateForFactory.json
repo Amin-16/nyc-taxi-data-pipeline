@@ -43,27 +43,6 @@
 			"properties": {
 				"activities": [
 					{
-						"name": "Alert_Placeholder",
-						"type": "WebActivity",
-						"dependsOn": [],
-						"policy": {
-							"timeout": "0.12:00:00",
-							"retry": 0,
-							"retryIntervalInSeconds": 30,
-							"secureOutput": false,
-							"secureInput": false
-						},
-						"userProperties": [],
-						"typeProperties": {
-							"method": "POST",
-							"headers": {},
-							"url": "https://httpbin.org/status/200",
-							"body": {
-								"status": "Failed"
-							}
-						}
-					},
-					{
 						"name": "Get_Metadata_Check",
 						"type": "GetMetadata",
 						"dependsOn": [],
