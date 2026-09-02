@@ -436,35 +436,6 @@
 										"referenceName": "ls_databricks_nyctaxi",
 										"type": "LinkedServiceReference"
 									}
-								},
-								{
-									"name": "Alert_Weather_Failed",
-									"type": "WebActivity",
-									"dependsOn": [
-										{
-											"activity": "Copy_Weather_HTTP_to_Bronze",
-											"dependencyConditions": [
-												"Failed"
-											]
-										}
-									],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"method": "POST",
-										"headers": {},
-										"url": "https://httpbin.org/status/200",
-										"body": {
-											"status": "FAILED",
-											"pipeline": "pl_ingest_weather_incremental"
-										}
-									}
 								}
 							]
 						}
