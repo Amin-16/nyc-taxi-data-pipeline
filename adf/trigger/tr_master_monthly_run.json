@@ -10,7 +10,8 @@
 			},
 			"parameters": {
 				"p_trigger_type": "\"tumbling_window\"",
-				"p_debug_mode": false
+				"p_debug_mode": false,
+				"p_window_start": "@formatDateTime(trigger().outputs.windowStartTime, 'yyyy-MM')"
 			}
 		},
 		"type": "TumblingWindowTrigger",

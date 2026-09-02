@@ -121,7 +121,13 @@
 						"referenceName": "pl_ingest_trips_batch",
 						"type": "PipelineReference"
 					},
-					"waitOnCompletion": true
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_year_month": {
+							"value": "@pipeline().parameters.p_window_start",
+							"type": "Expression"
+						}
+					}
 				}
 			},
 			{
@@ -368,6 +374,9 @@
 			"p_debug_mode": {
 				"type": "bool",
 				"defaultValue": false
+			},
+			"p_window_start": {
+				"type": "string"
 			}
 		},
 		"annotations": []
