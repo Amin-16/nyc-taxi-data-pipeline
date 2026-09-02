@@ -902,6 +902,367 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/pl_master_orchestrator')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "pipeline_start",
+						"type": "DatabricksNotebook",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_pipeline_run",
+							"baseParameters": {
+								"pipeline_name": "master",
+								"activity_name": "start",
+								"status": "STARTED"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_nyctaxi",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Check_Zone_Lookup",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "pipeline_start",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "ds_bronze_zone_lookup",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"exists"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "DelimitedTextReadSettings"
+							}
+						}
+					},
+					{
+						"name": "If Condition1",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Check_Zone_Lookup",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@not(activity('Check_Zone_Lookup').output.exists)",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "ingest_zone_lookup",
+									"type": "ExecutePipeline",
+									"dependsOn": [],
+									"policy": {
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"pipeline": {
+											"referenceName": "pl_ingest_zone_lookup",
+											"type": "PipelineReference"
+										},
+										"waitOnCompletion": true,
+										"parameters": {}
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Ingest_Trips",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "If Condition1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_ingest_trips_batch",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Ingest_Weather",
+						"type": "ExecutePipeline",
+						"dependsOn": [
+							{
+								"activity": "If Condition1",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"pipeline": {
+								"referenceName": "pl_ingest_weather_incremental",
+								"type": "PipelineReference"
+							},
+							"waitOnCompletion": true,
+							"parameters": {}
+						}
+					},
+					{
+						"name": "Silver_Trips",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Ingest_Trips",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_trips"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_nyctaxi",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Silver_Weather",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Ingest_Weather",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_weather"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_nyctaxi",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Gold_Build",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Silver_Trips",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							},
+							{
+								"activity": "Silver_Weather",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/gold/master_gold_build"
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_nyctaxi",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "pipeline_end",
+						"type": "DatabricksNotebook",
+						"dependsOn": [
+							{
+								"activity": "Gold_Build",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_pipeline_run",
+							"baseParameters": {
+								"pipeline_name": "master",
+								"activity_name": "complete",
+								"status": "SUCCEEDED"
+							}
+						},
+						"linkedServiceName": {
+							"referenceName": "ls_databricks_nyctaxi",
+							"type": "LinkedServiceReference"
+						}
+					},
+					{
+						"name": "Alert_Failure",
+						"type": "WebActivity",
+						"dependsOn": [
+							{
+								"activity": "Silver_Trips",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Gold_Build",
+								"dependencyConditions": [
+									"Failed"
+								]
+							},
+							{
+								"activity": "Silver_Weather",
+								"dependencyConditions": [
+									"Failed"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"method": "POST",
+							"headers": {
+								"Content-Type": "application/json"
+							},
+							"url": {
+								"value": "https://prod-12.swedencentral.logic.azure.com:443/workflows/552fb0333cd9427f957fe30ed86ec9d4/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=DFfoMhG5QzxY09swJQ7vetMT2_x_NglJhhVDf73Q-u8",
+								"type": "Expression"
+							},
+							"body": {
+								"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"trigger_time\": \"@{pipeline().TriggerTime}\",\n  \"error_details\": \"@{if(equals(activity('Gold_Build')?.status, 'Failed'), activity('Gold_Build')?.error?.message, if(equals(activity('Silver_Trips')?.status, 'Failed'), activity('Silver_Trips')?.error?.message, if(equals(activity('Silver_Weather')?.status, 'Failed'), activity('Silver_Weather')?.error?.message, 'Pipeline execution failed during processing.')))}\"\n}",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Fail",
+						"type": "Fail",
+						"dependsOn": [
+							{
+								"activity": "Alert_Failure",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"message": "Pipeline failed. Failure alert email triggered via Logic App.",
+							"errorCode": "500"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"parameters": {
+					"p_trigger_type": {
+						"type": "string",
+						"defaultValue": "schedule"
+					},
+					"p_debug_mode": {
+						"type": "bool",
+						"defaultValue": false
+					}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_databricks_nyctaxi')]",
+				"[concat(variables('factoryId'), '/datasets/ds_bronze_zone_lookup')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_ingest_trips_batch')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_ingest_weather_incremental')]",
+				"[concat(variables('factoryId'), '/pipelines/pl_ingest_zone_lookup')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/tr_daily_weather_check')]",
 			"type": "Microsoft.DataFactory/factories/triggers",
 			"apiVersion": "2018-06-01",
