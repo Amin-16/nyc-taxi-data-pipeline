@@ -261,7 +261,7 @@
 				}
 			},
 			{
-				"name": "Fail",
+				"name": "Fail_ingest_trips",
 				"type": "Fail",
 				"dependsOn": [
 					{
@@ -363,7 +363,7 @@
 				}
 			},
 			{
-				"name": "Fail_copy1",
+				"name": "Fail_ingest_weather",
 				"type": "Fail",
 				"dependsOn": [
 					{
@@ -414,7 +414,7 @@
 				}
 			},
 			{
-				"name": "Fail_copy1_copy1",
+				"name": "fail_gold",
 				"type": "Fail",
 				"dependsOn": [
 					{
