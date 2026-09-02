@@ -15,7 +15,7 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_tr",
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_trips",
 					"baseParameters": {
 						"p_window_start": {
 							"value": "@pipeline().parameters.p_window_start",
