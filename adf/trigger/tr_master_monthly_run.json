@@ -3,6 +3,16 @@
 	"properties": {
 		"annotations": [],
 		"runtimeState": "Stopped",
+		"pipeline": {
+			"pipelineReference": {
+				"referenceName": "pl_master_orchestrator",
+				"type": "PipelineReference"
+			},
+			"parameters": {
+				"p_trigger_type": "\"tumbling_window\"",
+				"p_debug_mode": false
+			}
+		},
 		"type": "TumblingWindowTrigger",
 		"typeProperties": {
 			"frequency": "Month",
