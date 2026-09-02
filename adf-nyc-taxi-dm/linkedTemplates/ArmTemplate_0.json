@@ -333,14 +333,7 @@
 					{
 						"name": "Alert_Placeholder",
 						"type": "WebActivity",
-						"dependsOn": [
-							{
-								"activity": "If_Not_Ingested",
-								"dependencyConditions": [
-									"Failed"
-								]
-							}
-						],
+						"dependsOn": [],
 						"policy": {
 							"timeout": "0.12:00:00",
 							"retry": 0,
@@ -570,34 +563,6 @@
 									"linkedServiceName": {
 										"referenceName": "ls_databricks_nyctaxi",
 										"type": "LinkedServiceReference"
-									}
-								},
-								{
-									"name": "Alert_Placeholder_copy1",
-									"type": "WebActivity",
-									"dependsOn": [
-										{
-											"activity": "Log_Audit_Summary_Failed",
-											"dependencyConditions": [
-												"Succeeded"
-											]
-										}
-									],
-									"policy": {
-										"timeout": "0.12:00:00",
-										"retry": 0,
-										"retryIntervalInSeconds": 30,
-										"secureOutput": false,
-										"secureInput": false
-									},
-									"userProperties": [],
-									"typeProperties": {
-										"method": "POST",
-										"headers": {},
-										"url": "https://httpbin.org/status/200",
-										"body": {
-											"status": "Failed"
-										}
 									}
 								}
 							]
