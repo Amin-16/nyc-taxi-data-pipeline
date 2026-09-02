@@ -15,9 +15,12 @@
 				},
 				"userProperties": [],
 				"typeProperties": {
-					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_trips",
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_tr",
 					"baseParameters": {
-						"p_window_start": "@pipeline().parameters.p_window_start"
+						"p_window_start": {
+							"value": "@pipeline().parameters.p_window_start",
+							"type": "Expression"
+						}
 					}
 				},
 				"linkedServiceName": {
@@ -40,7 +43,10 @@
 				"typeProperties": {
 					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/silver/clean_weather",
 					"baseParameters": {
-						"p_window_start": "@pipeline().parameters.p_window_start"
+						"p_window_start": {
+							"value": "@pipeline().parameters.p_window_start",
+							"type": "Expression"
+						}
 					}
 				},
 				"linkedServiceName": {
@@ -151,6 +157,11 @@
 				}
 			}
 		],
+		"parameters": {
+			"p_window_start": {
+				"type": "string"
+			}
+		},
 		"annotations": []
 	}
 }
