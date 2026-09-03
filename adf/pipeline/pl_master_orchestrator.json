@@ -1,0 +1,444 @@
+{
+	"name": "pl_master_orchestrator",
+	"properties": {
+		"activities": [
+			{
+				"name": "pipeline_start",
+				"type": "DatabricksNotebook",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_pipeline_run",
+					"baseParameters": {
+						"p_pipeline_name": {
+							"value": "@{pipeline().Pipeline}",
+							"type": "Expression"
+						},
+						"p_activity_name": "start",
+						"p_status": "STARTED",
+						"p_run_id": {
+							"value": "@{pipeline().RunId}",
+							"type": "Expression"
+						},
+						"p_error_message": "NONE"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_nyctaxi",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Check_Zone_Lookup",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "pipeline_start",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "ds_bronze_zone_lookup",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"exists"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "DelimitedTextReadSettings"
+					}
+				}
+			},
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check_Zone_Lookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(activity('Check_Zone_Lookup').output.exists)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "ingest_zone_lookup",
+							"type": "ExecutePipeline",
+							"dependsOn": [],
+							"policy": {
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "pl_ingest_zone_lookup",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Ingest_Trips",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "If Condition1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_ingest_trips_batch",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_year_month": {
+							"value": "@pipeline().parameters.p_window_start",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Ingest_Weather",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "If Condition1",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_ingest_weather_incremental",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true
+				}
+			},
+			{
+				"name": "Gold_Build",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Silver_Processing",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/gold/master_gold_build"
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_nyctaxi",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "pipeline_end",
+				"type": "DatabricksNotebook",
+				"dependsOn": [
+					{
+						"activity": "Gold_Build",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebookPath": "/Users/mamin7522@gmail.com/nyc-taxi-data-pipeline/notebooks/utils/log_pipeline_run",
+					"baseParameters": {
+						"p_run_id": {
+							"value": "@{pipeline().RunId}",
+							"type": "Expression"
+						},
+						"p_pipeline_name": {
+							"value": "@{pipeline().Pipeline}",
+							"type": "Expression"
+						},
+						"p_status": "SUCCEEDED"
+					}
+				},
+				"linkedServiceName": {
+					"referenceName": "ls_databricks_nyctaxi",
+					"type": "LinkedServiceReference"
+				}
+			},
+			{
+				"name": "Alert_Ingest_Trips",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Ingest_Trips",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"url": {
+						"value": "https://prod-12.swedencentral.logic.azure.com:443/workflows/552fb0333cd9427f957fe30ed86ec9d4/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=DFfoMhG5QzxY09swJQ7vetMT2_x_NglJhhVDf73Q-u8",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"failed_activity\": \"Ingest_Trips\",\n  \"error_details\": \"@{activity('Ingest_Trips')?['error']?['message']}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Fail_ingest_trips",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Alert_Ingest_Trips",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Pipeline failed. Failure alert email triggered via Logic App.",
+					"errorCode": "500"
+				}
+			},
+			{
+				"name": "Silver_Processing",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "Ingest_Trips",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "Ingest_Weather",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [
+					{
+						"name": "p_window_start",
+						"value": "@pipeline().parameters.p_window_start"
+					}
+				],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "pl_silver_processing",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"p_window_start": "@pipeline().parameters.p_window_start"
+					}
+				}
+			},
+			{
+				"name": "Fail_silver",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Silver_Processing",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Pipeline failed. Failure alert email triggered via Logic App.",
+					"errorCode": "500"
+				}
+			},
+			{
+				"name": "Alert_Ingest_Weather",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Ingest_Weather",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"url": {
+						"value": "https://prod-12.swedencentral.logic.azure.com:443/workflows/552fb0333cd9427f957fe30ed86ec9d4/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=DFfoMhG5QzxY09swJQ7vetMT2_x_NglJhhVDf73Q-u8",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"failed_activity\": \"Ingest_Weather\",\n  \"error_details\": \"@{activity('Ingest_Weather')?['error']?['message']}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Fail_ingest_weather",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Alert_Ingest_Weather",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Pipeline failed. Failure alert email triggered via Logic App.",
+					"errorCode": "500"
+				}
+			},
+			{
+				"name": "Alert_Gold_Build",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Gold_Build",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "POST",
+					"headers": {
+						"Content-Type": "application/json"
+					},
+					"url": {
+						"value": "https://prod-12.swedencentral.logic.azure.com:443/workflows/552fb0333cd9427f957fe30ed86ec9d4/triggers/When_an_HTTP_request_is_received/paths/invoke?api-version=2016-10-01&sp=%2Ftriggers%2FWhen_an_HTTP_request_is_received%2Frun&sv=1.0&sig=DFfoMhG5QzxY09swJQ7vetMT2_x_NglJhhVDf73Q-u8",
+						"type": "Expression"
+					},
+					"body": {
+						"value": "{\n  \"pipeline\": \"@{pipeline().Pipeline}\",\n  \"run_id\": \"@{pipeline().RunId}\",\n  \"data_factory\": \"@{pipeline().DataFactory}\",\n  \"failed_activity\": \"Gold_Build\",\n  \"error_details\": \"@{activity('Gold_Build')?['error']?['message']}\"\n}",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "fail_gold",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Alert_Gold_Build",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Pipeline failed. Failure alert email triggered via Logic App.",
+					"errorCode": "500"
+				}
+			}
+		],
+		"parameters": {
+			"p_window_start": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}
