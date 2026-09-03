@@ -79,13 +79,33 @@
 					},
 					"tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month": {
 						"value": "[parameters('tr_monthly_trips_ingest_properties_pipeline_parameters_p_year_month')]"
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "adf-nyc-taxi-dm_ArmTemplate_1",
+			"type": "Microsoft.Resources/deployments",
+			"apiVersion": "2024-03-01",
+			"properties": {
+				"mode": "incremental",
+				"templateLink": {
+					"uri": "[concat(parameters('containerUri'), '/ArmTemplate_1.json', parameters('containerSasToken'))]",
+					"contentVersion": "1.0.0.0"
+				},
+				"parameters": {
+					"factoryName": {
+						"value": "[parameters('factoryName')]"
 					},
 					"tr_master_monthly_run_properties_pipeline_parameters_p_window_start": {
 						"value": "[parameters('tr_master_monthly_run_properties_pipeline_parameters_p_window_start')]"
 					}
 				}
 			},
-			"dependsOn": []
+			"dependsOn": [
+				"[resourceId('Microsoft.Resources/deployments', 'adf-nyc-taxi-dm_ArmTemplate_0')]"
+			]
 		}
 	]
 }
