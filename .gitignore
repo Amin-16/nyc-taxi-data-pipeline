@@ -1,17 +1,40 @@
-# Python & PySpark
+# Secrets
+.env
+*.key
+*.pem
+*.crt
+
+# Data files
+*.parquet
+*.csv
+*.json
+*.db
+*.sqlite
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Python
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
 .pytest_cache/
-.venv/
+.coverage
 venv/
+env/
 
-# Environment & Credentials
-.env
-*.pem
-*.key
-client_secret*
-
-# IDE / System files
-.DS_Store
-.vscode/
-.idea/
+# Databricks
+*.dbc
+*.ipynb
