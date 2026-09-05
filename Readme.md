@@ -57,6 +57,8 @@ This pipeline ingests NYC Yellow Taxi trip records (batch + incremental) and Ope
 /docs
   arch-diagram.png
   er-diagram.png
+  DQ report.md
+  runbook.md
 
 README.md
 ```
@@ -96,7 +98,7 @@ Automated checks cover nulls, duplicates, range/bounds violations, referential i
 | Impossible trip sequences (pickup after dropoff) | 1.12%      | Genuine data errors, quarantined                                                                                        |
 | Duplicate trip keys                              | 1.6%       | Small group sizes (max 4), consistent with coincidental natural-key collisions, not a key-design flaw                   |
 
-**Schema drift handling:** additive changes (e.g., TLC's `Airport_fee`/`cbd_congestion_fee` columns introduced mid-year) are automatically detected and evolved via Auto Loader. Breaking changes (type changes, disappeared columns) are deliberately **not** auto-handled — they throw a real exception, are logged as a distinct critical event, and halt the pipeline without advancing any state, requiring human review. Column renames are a known, documented limitation (see design doc).
+**Schema drift handling:** additive changes (e.g., TLC's `Airport_fee`/`cbd_congestion_fee` columns introduced mid-year) are automatically detected and evolved via Auto Loader. Breaking changes (type changes, disappeared columns) are deliberately **not** auto-handled — they throw a real exception, are logged as a distinct critical event, and halt the pipeline without advancing any state, requiring human review. Column renames are a known, documented limitation .
 
 ---
 
