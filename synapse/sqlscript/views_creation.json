@@ -1,0 +1,17 @@
+{
+	"name": "views_creation",
+	"properties": {
+		"content": {
+			"query": "USE nyc_taxi_gold;\nGO\n\nCREATE OR ALTER VIEW dbo.dim_date AS\nSELECT * FROM OPENROWSET(\n    BULK 'dim_date/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result;\nGO\n\nCREATE OR ALTER VIEW dbo.dim_location AS\nSELECT * FROM OPENROWSET(\n    BULK 'dim_location/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result\nWHERE is_current = 1;\nGO\n\nCREATE OR ALTER VIEW dbo.dim_vendor AS\nSELECT * FROM OPENROWSET(\n    BULK 'dim_vendor/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result;\nGO\n\nCREATE OR ALTER VIEW dbo.dim_weather AS\nSELECT * FROM OPENROWSET(\n    BULK 'dim_weather/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result;\nGO\n\nCREATE OR ALTER VIEW dbo.fact_trips AS\nSELECT * FROM OPENROWSET(\n    BULK 'fact_trips/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "nyc_taxi_gold",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

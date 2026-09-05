@@ -1,0 +1,17 @@
+{
+	"name": "streaming views",
+	"properties": {
+		"content": {
+			"query": "USE nyc_taxi_gold;\nGO\n\nCREATE OR ALTER VIEW dbo.fact_trips_streaming AS\nSELECT * FROM OPENROWSET(\n    BULK 'fact_trips_streaming/',\n    DATA_SOURCE = 'gold_storage',\n    FORMAT = 'DELTA'\n) AS result;\nGO\n\nCREATE OR ALTER VIEW dbo.vw_streaming_activity AS\nSELECT\n    v.vendor_name,\n    f.pickup_location_id,\n    COUNT(*) AS event_count,\n    AVG(f.fare_amount) AS avg_fare,\n    MAX(f.event_timestamp) AS latest_event_time,\n    MIN(f.event_timestamp) AS earliest_event_time\nFROM dbo.fact_trips_streaming f\nLEFT JOIN dbo.dim_vendor v ON f.vendor_key = v.vendor_key\nGROUP BY v.vendor_name, f.pickup_location_id;\nGO",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "nyc_taxi_gold",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
