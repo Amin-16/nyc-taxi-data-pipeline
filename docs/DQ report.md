@@ -192,7 +192,3 @@ The `critical_row_checks` failure is primarily driven by:
 **Report Generated:** September 5, 2026  
 **Data Quality Framework:** Automated DQ checks + Quarantine  
 **Next Steps:** Gold layer star schema — ready for consumption
-
----
-
-✅ **Data Quality Report Complete**

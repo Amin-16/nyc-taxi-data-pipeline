@@ -147,6 +147,6 @@ Azure Synapse Serverless SQL exposes Gold via Delta-aware views (`OPENROWSET ...
 
 ## Setup & running
 
-for full setup instructions, how to run the pipeline end-to-end, and how to recover from common failure scenarios.
+for full setup instructions, how to run the pipeline end-to-end, and how to recover from common failure scenarios refer to docs/runbook.md
 
 **Prerequisites:** Azure subscription, Azure CLI, an Azure Databricks workspace, ADF, Event Hubs, Synapse, and Power BI Desktop.
