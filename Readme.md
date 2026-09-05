@@ -59,7 +59,8 @@ This pipeline ingests NYC Yellow Taxi trip records (batch + incremental) and Ope
   er-diagram.png
   DQ report.md
   runbook.md
-
+/powerBI
+  nyc_dasboard.pbix
 README.md
 ```
 
